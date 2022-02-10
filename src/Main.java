@@ -7,6 +7,7 @@ import fig.exec.Execution;
 import resnax.so.Benchmark;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -36,22 +37,26 @@ public class Main implements Runnable {
         return subDeriv;
     }
 
-    private void read_lines_to_buffer(BufferedReader reader, BufferedWriter writer) throws IOException{
-        String line = reader.readLine();
-        for (; !line.isEmpty(); line = reader.readLine()) {
-            writer.write(line);
-            writer.write("\n");
+    private void read_lines_to_list(BufferedReader reader, List<String> lines) {
+        try {
+            String line = reader.readLine();
+            for (; !line.isEmpty(); line = reader.readLine()) {
+                lines.add(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("IO: read lines");
         }
     }
 
     @Override
     public void run() {
         // get utterance from console
-        BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Please give a description of the regex you want to synthesize in English in one line:");
         String utterance = null;
         try {
-            utterance = bf.readLine();
+            utterance = reader.readLine();
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException("IO: natural language description");
@@ -61,21 +66,33 @@ public class Main implements Runnable {
         String sketch = parse_nl(utterance);
 
         System.out.println("Please provide examples:\n");
-        // get original set of examples and build benchmark file
-        try {
-            BufferedWriter benchmark_writer = new BufferedWriter(new FileWriter(BENCHMARK_FILE));
-            benchmark_writer.write("natural language\n\n");
-            read_lines_to_buffer(bf, benchmark_writer);
-            benchmark_writer.write("\nna");
-            benchmark_writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("IO: examples");
+        // get original set of examples
+        List<String> lines = new ArrayList<>();
+        read_lines_to_list(reader, lines);
+        Benchmark benchmark = Benchmark.read(lines, sketch);
+        benchmark.run_interactive();
+
+        while (true) {
+            System.out.println("Is the regex correct? Y/n");
+            try {
+                String ans = reader.readLine();
+                if (ans.isEmpty() || ans.equals("y") || ans.equals("Y")) {
+                    break;
+                } else if (ans.equals("n") || ans.equals("N")) {
+                    System.out.println("Please provide more examples:");
+                    read_lines_to_list(reader, lines);
+                    benchmark = Benchmark.read(lines, sketch);
+                    benchmark.run_interactive();
+                } else {
+                    continue;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException("IO: regex check");
+            }
         }
 
-
-        Benchmark benchmark = Benchmark.read(BENCHMARK_FILE, "log", sketch, "0");
-        benchmark.run_interactive();
+        System.out.println("regex found, exiting..");
     }
 
     public static void main(String[] args) {

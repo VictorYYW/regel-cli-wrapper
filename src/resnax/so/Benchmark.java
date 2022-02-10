@@ -33,6 +33,110 @@ import java.util.*;
   public String logPath;
   public String csvPath;
 
+  public static Benchmark read(List<String> examples, String sketch) {
+    Benchmark ret = new Benchmark();
+    ret.name = "name";
+    ret.sketch = sketch;
+    ret.gt = null;
+    int k_max = 0;
+
+    for (String line : examples) {
+      int splitIndex = line.lastIndexOf(',');
+      String str = line.substring(1, splitIndex - 1);
+      String type = line.substring(splitIndex + 1);
+//            System.out.println(str + ": " + type);
+      k_max = Integer.max(k_max, str.length());
+
+      if (type.equals("+")) ret.examples.add(new Example(str, true));
+      else if (type.equals("-")) ret.examples.add(new Example(str, false));
+      else throw new RuntimeException("example type incorrect");
+
+      for (int i = 0; i < str.length(); i++) {
+        char chari = str.charAt(i);
+        if (Character.isDigit(chari)) appliedTerminalsMap.put("num", chari);
+        else if (Character.isLowerCase(chari)) appliedTerminalsMap.put("low", chari);
+        else if (Character.isUpperCase(chari)) appliedTerminalsMap.put("cap", chari);
+        else appliedTerminalsMap.put("special", chari);
+      }
+    }
+    // applied terminals
+
+    {
+      Collection<Character> numTerminals = appliedTerminalsMap.get("num");
+      Collection<Character> lowerTerminals = appliedTerminalsMap.get("low");
+      Collection<Character> upperTerminals = appliedTerminalsMap.get("cap");
+      Collection<Character> specialTerminals = appliedTerminalsMap.get("special");
+
+      ret.appliedTerminalsCost.add("<any>");
+
+      if (numTerminals != null) {
+        ret.appliedTerminalsNoCost.add("<num>");
+        ret.appliedTerminalsNoCost.add("<num1-9>");
+      }
+
+      if (lowerTerminals != null || upperTerminals != null) {
+        ret.appliedTerminalsNoCost.add("<let>");
+      }
+
+      if (specialTerminals != null) {
+        for (Character c : specialTerminals) {
+          ret.appliedTerminalsNoCost.add("<" + c + ">");
+        }
+      }
+
+      if (lowerTerminals != null) ret.appliedTerminalsNoCost.add("<low>");
+
+      if (upperTerminals != null) ret.appliedTerminalsNoCost.add("<cap>");
+
+      if (numTerminals != null) {
+        if (numTerminals.size() < 5) {
+          for (Character c : numTerminals) {
+            ret.appliedTerminalsNoCost.add("<" + c + ">");
+          }
+        } else {
+          for (Character c : numTerminals) {
+            ret.appliedTerminalsCost.add("<" + c + ">");
+          }
+        }
+      }
+
+      if (lowerTerminals != null) {
+        if (lowerTerminals.size() < 10) {
+          for (Character c : lowerTerminals) {
+            ret.appliedTerminalsNoCost.add("<" + c + ">");
+          }
+        } else {
+          for (Character c : lowerTerminals) {
+            ret.appliedTerminalsCost.add("<" + c + ">");
+          }
+        }
+      }
+
+      if (upperTerminals != null) {
+        if (upperTerminals.size() < 10) {
+          for (Character c : upperTerminals) {
+            ret.appliedTerminalsNoCost.add("<" + c + ">");
+          }
+        } else {
+          for (Character c : upperTerminals) {
+            ret.appliedTerminalsCost.add("<" + c + ">");
+          }
+        }
+      }
+
+    }
+
+    // main max
+    {
+
+      Main.K_MAX = k_max;
+//        System.out.println("kmax:" + Main.K_MAX);
+
+    }
+
+    return ret;
+  }
+
   public static Benchmark read(String benchmark, String sketch) {
       return read(benchmark, null, sketch, null);
   }
@@ -234,7 +338,7 @@ import java.util.*;
   public void output_interact(BenchmarkRes bres) {
     if (Main.succ) {
 
-      System.out.println(bres.program.toOutput() + "`" + bres.regex + "`" + bres.time + "`" + bres.matchGt);
+      System.out.println(bres.program.toOutput());
     } else {
       System.out.println("null" + "`" + "null" + "`" + "null" + "`" + "False");
     }
