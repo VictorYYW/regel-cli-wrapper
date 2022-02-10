@@ -4,11 +4,18 @@ import edu.stanford.nlp.sempre.Master;
 import edu.stanford.nlp.sempre.Parser;
 import edu.stanford.nlp.sempre.Session;
 import fig.exec.Execution;
+import resnax.so.Benchmark;
+
+import java.io.*;
+import java.util.List;
 
 
 public class Main implements Runnable {
     public int beam = 200;
-    public String parse_nl(String utterance) {
+
+    private static final String BENCHMARK_FILE = "tmp";
+
+    private String parse_nl(String utterance) {
         Builder builder = new Builder();
         builder.build();
 
@@ -27,10 +34,14 @@ public class Main implements Runnable {
             subDeriv = subDeriv.substring(0, subDeriv.indexOf(")"));
         }
         return subDeriv;
-//        for (int i = 0; i < derivs.size(); i++) {
-//            String derivString = ((derivs.get(i)).value).toString();
-//            System.out.print(derivString);
-//        }
+    }
+
+    private void read_lines_to_buffer(BufferedReader reader, BufferedWriter writer) throws IOException{
+        String line = reader.readLine();
+        for (; !line.isEmpty(); line = reader.readLine()) {
+            writer.write(line);
+            writer.write("\n");
+        }
     }
 
     @Override
@@ -49,13 +60,26 @@ public class Main implements Runnable {
         // parse utterance and get regex sketch
         String sketch = parse_nl(utterance);
 
-        // get original set of examples
+        System.out.println("Please provide examples:\n");
+        // get original set of examples and build benchmark file
+        try {
+            BufferedWriter benchmark_writer = new BufferedWriter(new FileWriter(BENCHMARK_FILE));
+            benchmark_writer.write("natural language\n\n");
+            read_lines_to_buffer(bf, benchmark_writer);
+            benchmark_writer.write("\nna");
+            benchmark_writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("IO: examples");
+        }
+
+
+        Benchmark benchmark = Benchmark.read(BENCHMARK_FILE, "log", sketch, "0");
+        benchmark.run_interactive();
     }
 
     public static void main(String[] args) {
         System.out.println("This is a simple wrapper for regular expression synthesizer - REGEL.");
-
-        // find the sketch
         Main t = new Main();
         Execution.run(args, "Main", t, Master.getOptionsParser());
     }
