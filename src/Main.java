@@ -65,7 +65,10 @@ public class Main implements Runnable {
         // parse utterance and get regex sketch
         String sketch = parse_nl(utterance);
 
-        System.out.println("Please provide examples:\n");
+        System.out.println("Please provide examples in separate lines:\n" +
+                        "in the form of \"example\",+ or \"example\",-\n" +
+                        "for positive examples and negative examples respectively:"
+                );
         // get original set of examples
         List<String> lines = new ArrayList<>();
         read_lines_to_list(reader, lines);
