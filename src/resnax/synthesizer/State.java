@@ -47,7 +47,7 @@ public class State implements Comparable<State> {
   }
 
   public String toOutput() {
-    return this.pp.toString() + ": " + this.cost;
+    return this.pp.toString();
   }
 
   @Override public int compareTo(State o) {
